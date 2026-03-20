@@ -3,6 +3,12 @@ import pymunk
 import random
 import os
 
+# --- PATHS ---
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+def get_asset_path(path_in_assets):
+    return os.path.join(BASE_PATH, "assets", path_in_assets)
+
 # --- CONSTANTS ---
 WIDTH, HEIGHT = 800, 600
 PITCH_COLOR = (34, 139, 34)
@@ -246,7 +252,7 @@ class Ball:
         
         # Load and scale football image with circular mask
         try:
-            raw_img = pygame.image.load("assets/football.png").convert_alpha()
+            raw_img = pygame.image.load(get_asset_path("football.png")).convert_alpha()
             size = self.radius * 2
             raw_img = pygame.transform.smoothscale(raw_img, (size, size))
             
@@ -287,7 +293,7 @@ class Player:
         
         # Load and scale team logo with circular mask
         try:
-            full_path = f"assets/{logo_file}"
+            full_path = get_asset_path(logo_file)
             raw_img = pygame.image.load(full_path).convert_alpha()
             size = self.radius * 2
             raw_img = pygame.transform.smoothscale(raw_img, (size, size))
@@ -394,7 +400,8 @@ class Player:
             elif self.is_passing_option:
                 # Two passing options on either side (Up/Down)
                 offset_y = -120 if my_rank == 1 else 120
-                target_x = ball_pos.x + (130 if self.team == 0 else -130)
+                # Lateral positioning: stay mostly level with the ball, only slightly ahead
+                target_x = ball_pos.x + (30 if self.team == 0 else -30)
                 target_x = max(50, min(WIDTH-50, target_x))
                 target_y = ball_pos.y + offset_y
                 target_y = max(50, min(HEIGHT-50, target_y))
@@ -524,11 +531,11 @@ class Game:
         
         # Load Audio Infrastructure (Safe-loading)
         try:
-            self.kick_sound = pygame.mixer.Sound("assets/kick.wav")
+            self.kick_sound = pygame.mixer.Sound(get_asset_path("kick.wav"))
             self.kick_sound.set_volume(0.4)
-            self.goal_sound = pygame.mixer.Sound("assets/goal.wav")
+            self.goal_sound = pygame.mixer.Sound(get_asset_path("goal.wav"))
             self.goal_sound.set_volume(0.6)
-            self.crowd_sound = pygame.mixer.Sound("assets/crowd.wav")
+            self.crowd_sound = pygame.mixer.Sound(get_asset_path("crowd.wav"))
             self.crowd_sound.set_volume(0.2)
             self.crowd_sound.play(-1) # Loop indefinitely
         except:
