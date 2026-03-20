@@ -244,7 +244,7 @@ class Ball:
         moment = pymunk.moment_for_circle(mass, 0, self.radius)
         
         self.body = pymunk.Body(mass, moment)
-        self.body.position = (x, y)
+        self.body.position = pymunk.Vec2d(x, y)
         self.shape = pymunk.Circle(self.body, self.radius)
         self.shape.elasticity = 0.4
         self.shape.friction = 0.5
@@ -308,7 +308,7 @@ class Player:
         mass = 1.0
         moment = pymunk.moment_for_circle(mass, 0, self.radius)
         self.body = pymunk.Body(mass, moment)
-        self.body.position = (x, y)
+        self.body.position = pymunk.Vec2d(x, y)
         self.shape = pymunk.Circle(self.body, self.radius)
         self.shape.elasticity = 0.4
         self.shape.friction = 0.5
@@ -645,65 +645,7 @@ class Game:
                     elif self.state == "PLAYING": self.state = "PAUSED"
                     elif self.state == "PAUSED": self.state = "PLAYING"
             
-            if self.state == "PLAYING":
-                self.tick += 1
-                self.space.step(1.0 / FPS)
-                t0 = [p for p in self.players if p.team == 0]
-                t1 = [p for p in self.players if p.team == 1]
-                for p in self.players:
-                    if p.stun_timer > 0:
-                        p.stun_timer -= 1
-                        p.body.velocity *= 0.5
-                    else:
-                        p.update_ai(self.ball, t0 if p.team == 0 else t1, t1 if p.team == 0 else t0, self.tick, self)
-                
-                bx, by = self.ball.body.position.x, self.ball.body.position.y
-                if HEIGHT//2-100 < by < HEIGHT//2+100:
-                    delta_score = False
-                    if bx <= 0: 
-                        self.score_white += 1
-                        delta_score = True
-                    elif bx >= WIDTH: 
-                        self.score_blue += 1
-                        delta_score = True
-                    
-                    if delta_score:
-                        if self.goal_sound: self.goal_sound.play()
-                        if self.match_timer <= 0: # Golden Goal
-                            self.tournament.advance(self.team1_name if bx >= WIDTH else self.team2_name, self.score_blue, self.score_white)
-                            self.setup_next_match()
-                            self.state = "MATCH_OVER"
-                        else:
-                            self.state = "GOAL"
-                        self.auto_start_timer = FPS * 2 # 2s delay before countdown
-                        self.reset_pitch()
-
-                # Timer logic
-                if self.match_timer > 0:
-                    self.match_timer -= 1
-                    if self.match_timer <= 0:
-                        if self.score_blue != self.score_white:
-                            winner = self.team1_name if self.score_blue > self.score_white else self.team2_name
-                            self.tournament.advance(winner, self.score_blue, self.score_white)
-                            self.setup_next_match()
-                            self.state = "MATCH_OVER"
-                        # Else: Golden Goal mode (timer stays at 0, game continues)
-                        if self.state == "MATCH_OVER":
-                             self.auto_start_timer = FPS * 2
-
-            elif self.state in ("GOAL", "MATCH_OVER"):
-                if self.state == "MATCH_OVER" and self.tournament.winner:
-                    pass # Tournament Over, stay here
-                else:
-                    self.auto_start_timer -= 1
-                    if self.auto_start_timer <= 0:
-                        self.state = "COUNTDOWN"
-                        self.countdown_timer = FPS * 3
-
-            elif self.state == "COUNTDOWN":
-                self.countdown_timer -= 1
-                if self.countdown_timer <= 0:
-                    self.state = "PLAYING"
+            self.update()
 
             self.screen.fill(PITCH_COLOR)
             pygame.draw.rect(self.screen, (255, 255, 255), (0, HEIGHT//2-100, 15, 200), 2)
@@ -743,6 +685,68 @@ class Game:
                 self.screen.blit(winner_txt, (WIDTH//2 - winner_txt.get_width()//2, HEIGHT//2 + 10))
             
             pygame.display.flip()
+
+    def update(self):
+        if self.state == "PLAYING":
+            self.tick += 1
+            self.space.step(1.0 / FPS)
+            t0 = [p for p in self.players if p.team == 0]
+            t1 = [p for p in self.players if p.team == 1]
+            for p in self.players:
+                if p.stun_timer > 0:
+                    p.stun_timer -= 1
+                    p.body.velocity *= 0.5
+                else:
+                    p.update_ai(self.ball, t0 if p.team == 0 else t1, t1 if p.team == 0 else t0, self.tick, self)
+            
+            bx, by = self.ball.body.position.x, self.ball.body.position.y
+            if HEIGHT//2-100 < by < HEIGHT//2+100:
+                delta_score = False
+                if bx <= 0: 
+                    self.score_white += 1
+                    delta_score = True
+                elif bx >= WIDTH: 
+                    self.score_blue += 1
+                    delta_score = True
+                
+                if delta_score:
+                    if self.goal_sound: self.goal_sound.play()
+                    if self.match_timer <= 0: # Golden Goal
+                        self.tournament.advance(self.team1_name if bx >= WIDTH else self.team2_name, self.score_blue, self.score_white)
+                        self.setup_next_match()
+                        self.state = "MATCH_OVER"
+                    else:
+                        self.state = "GOAL"
+                    self.auto_start_timer = FPS * 2 # 2s delay before countdown
+                    self.reset_pitch()
+
+            # Timer logic
+            if self.match_timer > 0:
+                self.match_timer -= 1
+                if self.match_timer <= 0:
+                    if self.score_blue != self.score_white:
+                        winner = self.team1_name if self.score_blue > self.score_white else self.team2_name
+                        self.tournament.advance(winner, self.score_blue, self.score_white)
+                        self.setup_next_match()
+                        self.state = "MATCH_OVER"
+                    # Else: Golden Goal mode (timer stays at 0, game continues)
+                    if self.state == "MATCH_OVER":
+                         self.auto_start_timer = FPS * 2
+
+        elif self.state in ("GOAL", "MATCH_OVER"):
+            if self.state == "MATCH_OVER" and self.tournament.winner:
+                pass # Tournament Over, stay here
+            else:
+                self.auto_start_timer -= 1
+                if self.auto_start_timer <= 0:
+                    self.state = "COUNTDOWN"
+                    self.countdown_timer = FPS * 3
+
+        elif self.state == "COUNTDOWN":
+            self.countdown_timer -= 1
+            if self.countdown_timer <= 0:
+                self.state = "PLAYING"
+
 
 if __name__ == "__main__":
     Game().run()
