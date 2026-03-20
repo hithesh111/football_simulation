@@ -34,6 +34,38 @@ mock_pymunk.Body.DYNAMIC = 0
 mock_pymunk.Body.KINEMATIC = 1
 mock_pymunk.Body.STATIC = 2
 
+import math
+
+class MockVec2d(tuple):
+    def __new__(cls, x, y):
+        return super(MockVec2d, cls).__new__(cls, (x, y))
+    @property
+    def x(self): return self[0]
+    @property
+    def y(self): return self[1]
+    def get_distance(self, other):
+        return math.sqrt((self[0] - other[0])**2 + (self[1] - other[1])**2)
+    def __sub__(self, other):
+        return MockVec2d(self[0] - other[0], self[1] - other[1])
+    def __add__(self, other):
+        return MockVec2d(self[0] + other[0], self[1] + other[1])
+    def __mul__(self, other):
+        return MockVec2d(self[0] * other, self[1] * other)
+    def normalized(self):
+        mag = math.sqrt(self[0]**2 + self[1]**2)
+        if mag == 0: return MockVec2d(0, 0)
+        return MockVec2d(self[0]/mag, self[1]/mag)
+    def dot(self, other):
+        return self[0] * other[0] + self[1] * other[1]
+    def rotated(self, angle):
+        return MockVec2d(self[0]*math.cos(angle) - self[1]*math.sin(angle),
+                         self[0]*math.sin(angle) + self[1]*math.cos(angle))
+    @property
+    def length(self):
+        return math.sqrt(self[0]**2 + self[1]**2)
+
+mock_pymunk.Vec2d = MockVec2d
+
 def pytest_configure(config):
     """Initial configuration for pytest."""
     pass

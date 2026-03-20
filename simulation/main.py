@@ -244,7 +244,7 @@ class Ball:
         moment = pymunk.moment_for_circle(mass, 0, self.radius)
         
         self.body = pymunk.Body(mass, moment)
-        self.body.position = (x, y)
+        self.body.position = pymunk.Vec2d(x, y)
         self.shape = pymunk.Circle(self.body, self.radius)
         self.shape.elasticity = 0.4
         self.shape.friction = 0.5
@@ -308,7 +308,7 @@ class Player:
         mass = 1.0
         moment = pymunk.moment_for_circle(mass, 0, self.radius)
         self.body = pymunk.Body(mass, moment)
-        self.body.position = (x, y)
+        self.body.position = pymunk.Vec2d(x, y)
         self.shape = pymunk.Circle(self.body, self.radius)
         self.shape.elasticity = 0.4
         self.shape.friction = 0.5
